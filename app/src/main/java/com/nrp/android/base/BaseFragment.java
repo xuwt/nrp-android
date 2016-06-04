@@ -8,13 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.baidu.majia.http.HttpManager;
-import com.baidu.majia.interfaces.IInit;
-import com.baidu.majia.utils.NetworkUtil;
-import com.loopj.android.http.TextHttpResponseHandler;
 
 import butterknife.ButterKnife;
-import cz.msebera.android.httpclient.Header;
 
 
 public abstract class BaseFragment extends Fragment{
@@ -30,10 +25,10 @@ public abstract class BaseFragment extends Fragment{
         } else {
             View parentView = inflater.inflate(layoutId, null);
             ButterKnife.bind(this, parentView);
-            init();
             return parentView;
         }
     }
+
     @Override
     public void onDestroyView() {
         super.onDestroy();
@@ -44,5 +39,26 @@ public abstract class BaseFragment extends Fragment{
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mContext = getActivity();
+        initContentView();
+    }
+
+    private void initContentView() {
+        onBindListener();
+        onApplyData();
+    }
+    protected abstract int getLayoutId();
+    /**
+     * 设置监听事件
+     */
+    protected void onBindListener() {
+
+    }
+
+    /**
+     * 加载数据
+     */
+    protected void onApplyData() {
+
+
     }
 }

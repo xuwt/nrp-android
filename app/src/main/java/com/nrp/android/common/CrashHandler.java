@@ -9,7 +9,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.baidu.majia.utils.FileManager;
+import com.nrp.android.utils.FileManager;
 
 import java.io.BufferedReader;
 import java.io.File;

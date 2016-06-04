@@ -1,20 +1,11 @@
 package com.nrp.android.base;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 
 import butterknife.ButterKnife;
 
@@ -26,14 +17,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mContext = this;
+        init();
         int layout = getLayoutId();
         if (layout == 0) {
             throw new IllegalStateException("Please specify root layout resource id for " + getClass().getSimpleName());
         } else {
             setContentView(layout);
             ButterKnife.bind(this);
-            init();
+            initContentView();
         }
     }
 
@@ -47,7 +38,50 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ButterKnife.unbind(this);
+    }
 
+    private void initContentView() {
+        onQueryArguments(getIntent());
+        onBindListener();
+        onApplyData();
+    }
+
+    /***
+     * 用于在初始化View之前做一些事
+     */
+    protected void init() {
+        mContext = this;
+    }
+
+    protected abstract int getLayoutId();
+
+    protected abstract int getContentId();
+
+    /**
+     * 设置监听事件
+     */
+    protected void onBindListener() {
+
+    }
+
+    /**
+     * 加载数据
+     */
+    protected void onApplyData() {
+
+
+    }
+
+    /**
+     * 取得传递的参数
+     */
+    protected void onQueryArguments(Intent intent) {
+
+    }
 
     protected <T extends BaseFragment> T replaceFragment(Class<T> cls, String tag) {
         BaseFragment fragment = null;
@@ -74,7 +108,15 @@ public abstract class BaseActivity extends AppCompatActivity {
         return (T) fragment;
     }
 
-    protected abstract int getContentId();
-    protected abstract void init();
+    protected void startActivityWithoutExtras(Class<?> clazz) {
+        Intent intent = new Intent(this, clazz);
+        startActivity(intent);
+    }
 
+    protected void startActivityWithExtras(Class<?> clazz, Bundle extras) {
+        Intent intent = new Intent(this, clazz);
+        intent.putExtras(extras);
+        startActivity(intent);
+
+    }
 }

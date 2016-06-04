@@ -1,94 +1,141 @@
 package com.nrp.android;
 
-import android.app.Activity;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.content.Context;
-import android.os.Build;
-import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.support.v4.widget.DrawerLayout;
-import android.widget.ArrayAdapter;
-import android.widget.TextView;
+
+import com.nrp.android.base.BaseActivity;
+import com.nrp.android.fragment.HomeFragment;
+import com.nrp.android.fragment.MainFragment;
+import com.nrp.android.utils.SnackBarUtils;
+
+import butterknife.Bind;
 
 
-public class MainActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+public class MainActivity extends BaseActivity {
 
-    /**
-     * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
-     */
-    private NavigationDrawerFragment mNavigationDrawerFragment;
+    public static final String MAIN_FRAGMENT_TAG = "main_fragment_tag";
+    public static final String HOME_FRAGMENT_TAG = "home_fragment_tag";
 
-    /**
-     * Used to store the last screen title. For use in {@link #restoreActionBar()}.
-     */
-    private CharSequence mTitle;
+    @Bind(R.id.drawer_layout)
+    DrawerLayout mDrawerLayout;
+    @Bind(R.id.toolbar)
+    Toolbar mToolbar;
+    @Bind(R.id.navigation_view)
+    NavigationView mNavigationView;
+
+    // 菜单开关
+    private ActionBarDrawerToggle mDrawerToggle;
+
+    private FragmentManager mFragmentManager;
+    private Fragment mCurrentFragment;
+    private MenuItem mPreMenuItem;
+
+    private long lastBackKeyDownTick = 0;
+    public static final long MAX_DOUBLE_BACK_DURATION = 1500;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        mNavigationDrawerFragment = (NavigationDrawerFragment)
-                getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-        mTitle = getTitle();
-
-        // Set up the drawer.
-        mNavigationDrawerFragment.setUp(
-                R.id.navigation_drawer,
-                (DrawerLayout) findViewById(R.id.drawer_layout));
+    protected int getLayoutId() {
+        return R.layout.activity_main;
     }
 
     @Override
-    public void onNavigationDrawerItemSelected(int position) {
-        // update the main content by replacing fragments
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-                .commit();
+    protected int getContentId() {
+        return R.id.frame_content;
     }
 
-    public void onSectionAttached(int number) {
-        switch (number) {
-            case 1:
-                mTitle = getString(R.string.title_section1);
-                break;
-            case 2:
-                mTitle = getString(R.string.title_section2);
-                break;
-            case 3:
-                mTitle = getString(R.string.title_section3);
-                break;
+    @Override
+    protected void init() {
+        super.init();
+        mFragmentManager = getSupportFragmentManager();
+    }
+
+    @Override
+    protected void onApplyData() {
+        super.onApplyData();
+
+        mToolbar.setTitle(getResources().getString(R.string.app_name));
+
+        // 这句一定要在下面几句之前调用，不然就会出现点击无反应
+        setSupportActionBar(mToolbar);
+        setNavigationViewItemClickListener();
+        // ActionBarDrawerToggle配合Toolbar，实现Toolbar上菜单按钮开关效果。
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
+                mToolbar, R.string.drawer_open, R.string.drawer_close);
+        mDrawerToggle.syncState();
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        mToolbar.setNavigationIcon(R.drawable.ic_drawer_home);
+
+        replaceFragment(MainFragment.class , MAIN_FRAGMENT_TAG);
+    }
+
+    private void setNavigationViewItemClickListener() {
+        mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+
+            @Override
+            public boolean onNavigationItemSelected(MenuItem item) {
+                if (null != mPreMenuItem) {
+                    mPreMenuItem.setChecked(false);
+                }
+                switch (item.getItemId()) {
+                    case R.id.navigation_item_home:
+                        mToolbar.setTitle(getResources().getString(R.string.navigation_item_home_text));
+                        replaceFragment(HomeFragment.class , HOME_FRAGMENT_TAG);
+                        break;
+                    case R.id.navigation_item_post:
+                        mToolbar.setTitle(getResources().getString(R.string.navigation_item_post_text));
+                        replaceFragment(HomeFragment.class , HOME_FRAGMENT_TAG);
+                        break;
+                    case R.id.navigation_item_contact:
+                        mToolbar.setTitle(getResources().getString(R.string.navigation_item_contact_text));
+                        replaceFragment(HomeFragment.class , HOME_FRAGMENT_TAG);
+                        break;
+                    case R.id.navigation_item_setting:
+                        mToolbar.setTitle(getResources().getString(R.string.navigation_item_setting_text));
+                        replaceFragment(HomeFragment.class , HOME_FRAGMENT_TAG);
+                        break;
+                    default:
+                        break;
+                }
+                item.setChecked(true);
+                mDrawerLayout.closeDrawer(Gravity.LEFT);
+                mPreMenuItem = item;
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        // 当前抽屉是打开的，则关闭
+        if (mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
+            mDrawerLayout.closeDrawer(Gravity.LEFT);
+            return;
         }
-    }
 
-    public void restoreActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setTitle(mTitle);
+        long currentTick = System.currentTimeMillis();
+        if (currentTick - lastBackKeyDownTick > MAX_DOUBLE_BACK_DURATION) {
+            SnackBarUtils.makeShort(mDrawerLayout,
+                    getResources().getString(R.string.main_back_finish_tips)).success();
+            lastBackKeyDownTick = currentTick;
+        } else {
+            finish();
+            System.exit(0);
+        }
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if (!mNavigationDrawerFragment.isDrawerOpen()) {
-            // Only show items in the action bar relevant to this screen
-            // if the drawer is not showing. Otherwise, let the drawer
-            // decide what to show in the action bar.
-            getMenuInflater().inflate(R.menu.main, menu);
-            restoreActionBar();
-            return true;
-        }
-        return super.onCreateOptionsMenu(menu);
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main_toolbar, menu);
+        return true;
     }
 
     @Override
@@ -100,50 +147,12 @@ public class MainActivity extends ActionBarActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+            // startActivityWithoutExtras(SettingActivity.class);
+        } else if (id == R.id.action_about) {
+            // startActivityWithoutExtras(AboutActivity.class);
         }
+
 
         return super.onOptionsItemSelected(item);
     }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
-        }
-
-        @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
-        }
-    }
-
 }
